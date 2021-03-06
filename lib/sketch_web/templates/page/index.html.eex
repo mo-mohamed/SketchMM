@@ -1,0 +1,270 @@
+<!--<section class="phx-hero">
+  <h1><%= gettext "Welcome to %{name}!", name: "Phoenix" %></h1>
+  <p>Peace of mind from prototype to production</p>
+</section>-->
+
+<section class="row">
+  <article class="column">
+    <h2 id="test123">Operations</h2>
+
+    <div>
+       <p>Create Canvas</p>
+        <input type=number id="txt_create_canvas_width" placeholder="width"/>
+        <input type=number id="txt_create_canvas_height" placeholder="height"/>
+       <button id="btn_create_canvas">Create Canvas</button>
+       <p style="color:red" id="create_canvas_error_result"></p>
+       </div>
+
+    <div>
+        <p>Get Canvas</p>
+       <input type=text id="txt_get_canvas"/>
+       <button id="btn_get_canvas">Get Canvas</button>
+       <p style="color:red" id="get_canvas_error_result"></p>
+       </div>
+
+
+    <div>
+        <p>Draw Rectangle</p>
+        <form id="form_draw_rectangle">
+         <input type=number id="txt_rec_x_coordinate" placeholder="x coordinate"/>
+         <input type=number id="txt_rec_y_coordinate" placeholder="y coordinate"/>
+         <input type=number id="txt_rec_width" placeholder="width"/>
+         <input type=number id="txt_rec_height" placeholder="height"/>
+         <input type=text id="txt_rec_inner_filling" placeholder="inner_filling"/>
+         <input type=text id="txt_rec_border_filling" placeholder="border_filling"/>
+        </form>
+         <button id="btn_draw_rectangle">Draw Rectangle</button>
+       <p style="color:red" id="draw_rectangle_error_result"></p>
+    </div>
+
+     <div>
+        <p>Flood Fill</p>
+        <form id="form_draw_rectangle">
+         <input type=number id="txt_flood_x_coordinate" placeholder="x coordinate"/>
+         <input type=number id="txt_flood_y_coordinate" placeholder="y coordinate"/>
+         <input type=text id="txt_flood_fill" placeholder="filling"/>
+        </form>
+         <button id="btn_flood_fill">Flood Fill</button>
+       <p style="color:red" id="flood_fill_error_result"></p>
+    </div>
+  </article>
+  <article class="column">
+    <h2>My Canvas</h2>
+    <canvas></canvas>
+  </article>
+</section>
+
+<script>
+
+  var cuurent_canvas_id = "";
+
+
+  $("#btn_get_canvas").click(function(){
+      server_canvas_id = $("#txt_get_canvas").val();
+      get_canvas_url = "../api/canvas/" + server_canvas_id;
+
+      $.ajax({
+      url: get_canvas_url,
+      type: 'GET',
+      success: function(data, text_status, xhr) {
+          cuurent_canvas_id = data.id;
+          draw_canvas(data);
+      },
+      error: function(xhr, text_status, error)
+      {
+        if(xhr.status == 404)
+        {
+            $("#get_canvas_error_result").html("not found");
+        }
+        else
+        {
+          $("#get_canvas_error_result").html(xhr.responseJSON.errors);
+        }
+         
+      }
+    });
+  });
+
+   $("#btn_create_canvas").click(function(){
+     data = {
+      "width": parseInt($("#txt_create_canvas_width").val()),
+      "height": parseInt($("#txt_create_canvas_height").val())
+     };
+     if (data.width == "") {
+       data.border_filling = null;
+     }
+
+     if (data.height == "") {
+       data.inner_filling = null;
+     }
+     console.log(data);
+     console.log(JSON.stringify(data));
+
+
+      create_canvas_url = "../api/canvas/";
+
+      $.ajax({
+      url: create_canvas_url,
+      type: 'POST',
+      contentType: "application/json; charset=utf-8",
+      data: JSON.stringify(data),
+      success: function(data, text_status, xhr) {
+          cuurent_canvas_id = data.id;
+          draw_canvas(data);
+      },
+      error: function(xhr, text_status, error)
+      {
+          if(xhr.status == 404)
+          {
+              $("#create_canvas_error_result").html("not found");
+          }
+          else
+          {
+            $("#create_canvas_error_result").html(xhr.responseText);
+          }
+      }
+    });
+  });
+
+  $("#btn_draw_rectangle").click(function(){
+     data = {
+      "x_coordinate": parseInt($("#txt_rec_x_coordinate").val()),
+      "y_coordinate": parseInt($("#txt_rec_y_coordinate").val()),
+      "width": parseInt($("#txt_rec_width").val()),
+      "height": parseInt($("#txt_rec_height").val()),
+      "inner_filling": $("#txt_rec_inner_filling").val(),
+      "border_filling": $("#txt_rec_border_filling").val(),
+      "type": "rectangle"
+     };
+     if (data.border_filling == "") {
+       data.border_filling = null;
+     }
+
+     if (data.inner_filling == "") {
+       data.inner_filling = null;
+     }
+
+     if (isNaN(data.x_coordinate)) {
+       data.x_coordinate = null;
+     }
+
+     if (isNaN(data.y_coordinate)) {
+       data.y_coordinate = null;
+     }
+
+    if (isNaN(data.width)) {
+       data.width = null;
+     }
+
+       if (isNaN(data.height)) {
+       data.height = null;
+     }
+    
+      draw_on_canvas_url = "../api/canvas/" + cuurent_canvas_id + "/draw";
+
+      $.ajax({
+      url: draw_on_canvas_url,
+      type: 'POST',
+      contentType: "application/json; charset=utf-8",
+      data: JSON.stringify(data),
+      success: function(data, text_status, xhr) {
+          cuurent_canvas_id = data.id;
+          draw_canvas(data);
+      },
+      error: function(xhr, text_status, error)
+      {
+        console.log(xhr)
+          if(xhr.status == 404)
+          {
+              $("#draw_rectangle_error_result").html("not found");
+          }
+          else
+          {
+            $("#draw_rectangle_error_result").html(xhr.responseText);
+          }
+      }
+    });
+  });
+
+
+  $("#btn_flood_fill").click(function(){
+     data = {
+      "x_coordinate": parseInt($("#txt_flood_x_coordinate").val()),
+      "y_coordinate": parseInt($("#txt_flood_y_coordinate").val()),
+      "filling": $("#txt_flood_fill").val(),
+      "type": "flood_fill"
+     };
+     if (data.filling == "") {
+       data.filling = null;
+     }
+
+     if (isNaN(data.x_coordinate)) {
+       data.x_coordinate = null;
+     }
+
+     if (isNaN(data.y_coordinate)) {
+       data.y_coordinate = null;
+     }
+
+
+      flood_fill_canvas_url = "../api/canvas/" + cuurent_canvas_id + "/draw";
+
+      $.ajax({
+      url: flood_fill_canvas_url,
+      type: 'POST',
+      contentType: "application/json; charset=utf-8",
+      data: JSON.stringify(data),
+      success: function(data, text_status, xhr) {
+          cuurent_canvas_id = data.id;
+          draw_canvas(data);
+      },
+      error: function(xhr, text_status, error)
+      {
+          if(xhr.status == 404)
+          {
+              $("#flood_fill_error_result").html("not found");
+          }
+          else
+          {
+            $("#flood_fill_error_result").html(xhr.responseText);
+          }
+      }
+    });
+  });
+
+
+  function draw_canvas(canvas_data)
+  {
+    var cellSide = 30;
+    var matrix = canvas_data.matrix;
+    var canvas_width = canvas_data.width * cellSide;
+    var canvas_height = canvas_data.height * cellSide;
+
+    const canvas = document.querySelector('canvas');
+
+    canvas.width = canvas_width;
+    canvas.height = canvas_height;
+
+    var ctx = canvas.getContext('2d');
+
+
+    for (let i = 0; i < matrix.length; i++) {
+
+        for (let j = 0; j < matrix[i].length; j++) {
+            let x = j * cellSide;
+            let y = i * cellSide;
+            
+            cellColor = '#000000';
+            ctx.beginPath();
+            ctx.fillStyle = cellColor;
+            if (matrix[i][j] != null)
+            {
+              ctx.fillText(matrix[i][j],x + 15, y + 15)
+            }
+            ctx.strokeStyle = '#D8D8D8'
+            ctx.strokeRect(x,y,cellSide,cellSide)
+        }
+    }
+  }
+ 
+</script>
